@@ -24,7 +24,7 @@ namespace FinderMissingReferences.Editor.Core
                 
                 var scene = EditorSceneManager.OpenScene(editorBuildSettingsScenes[i].path);
 
-                List<MissingReferencesSceneData> missingReferencesSubDatas = FindMissingReferencesInScene(scene,
+                List<MissingReferencesSubData> missingReferencesSubDatas = FindMissingReferencesInScene(scene,
                     out int countMissingReferences);
 
                 if (countMissingReferences <= 0)

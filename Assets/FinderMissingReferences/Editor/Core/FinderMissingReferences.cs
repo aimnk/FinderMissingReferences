@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using Unity.VisualScripting;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -16,20 +15,28 @@ namespace FinderMissingReferences.Editor.Core
         /// Find all lost links
         /// </summary>
         /// <param name="obj"></param>
-        protected virtual int FindMissingReferences(Object obj)
+        protected virtual List<MissingReferencesSubData> FindMissingReferences(Object obj, out int countAllMissingReferences)
         {
-            var gameObject = obj.GameObject();
+            List<MissingReferencesSubData> missingReferencesSceneDatas = new List<MissingReferencesSubData>();
 
-            int countAllMissingReferences = 0;
-            
+            countAllMissingReferences = 0;
+
+            var gameObject = obj as GameObject;;
+
             if (gameObject != null)
             {
-                return FindMissingReferencesGameObject(gameObject);
+                missingReferencesSceneDatas = FindMissingReferencesGameObject(gameObject, out int countMissingReferences);
+
+                if (countMissingReferences > 0)
+                {
+                    countAllMissingReferences += countMissingReferences;
+                    return missingReferencesSceneDatas;
+                }
             }
 
             countAllMissingReferences += FindMissingReferencesObject(obj);
-            
-            return countAllMissingReferences;
+
+            return missingReferencesSceneDatas;
         }
 
         /// <summary>
@@ -37,16 +44,36 @@ namespace FinderMissingReferences.Editor.Core
         /// </summary>
         /// <param name="gameObject"></param>
         /// <returns></returns>
-        protected virtual int FindMissingReferencesGameObject(GameObject gameObject)
+        protected virtual List<MissingReferencesSubData> FindMissingReferencesGameObject(GameObject gameObject, out int countAllMissingReferences)
         {
-            var countAllMissingReferences = 0;
-            
+            countAllMissingReferences = 0;
+
+            List<MissingReferencesSubData> missingReferencesSceneDatas = new List<MissingReferencesSubData>();
+
             foreach (var component in gameObject.GetComponents<Component>())
             {
-                countAllMissingReferences += FindMissingReferencesObject(component);
+                int countMissing = FindMissingReferencesObject(component);
+
+                if (countMissing > 0)
+                {
+                    countAllMissingReferences += countMissing;
+
+                    missingReferencesSceneDatas.Add(
+                        new MissingReferencesSubData(gameObject.name,
+                            GlobalObjectId.GetGlobalObjectIdSlow(gameObject).ToString(),
+                            countMissing));
+                }
             }
-            
-            return countAllMissingReferences;
+
+            foreach (Transform child in gameObject.transform)
+            {
+                missingReferencesSceneDatas.AddRange(FindMissingReferencesGameObject(child.gameObject,
+                    out int countMissing));
+
+                countAllMissingReferences += countMissing;
+            }
+
+            return missingReferencesSceneDatas;
         }
         
         /// <summary>
@@ -89,30 +116,21 @@ namespace FinderMissingReferences.Editor.Core
         /// Search for lost links in the scene
         /// </summary>
         /// <param name="scene"></param>
-        protected virtual List<MissingReferencesSceneData> FindMissingReferencesInScene(Scene scene,
+        protected virtual List<MissingReferencesSubData> FindMissingReferencesInScene(Scene scene,
             out int countAllMissingReference)
         {
             countAllMissingReference = 0;
 
-            List<MissingReferencesSceneData> missingReferencesSceneDatas = new List<MissingReferencesSceneData>();
-            
-            var queue = new Queue<MissingReferencesSceneData>();
+            List<MissingReferencesSubData> missingReferencesSceneDatas = new List<MissingReferencesSubData>();
             
             foreach (var rootObject in scene.GetRootGameObjects())
             {
-                int countMissingReference = FindMissingReferencesGameObject(rootObject);
-                
-                if (countMissingReference > 0)
-                {
-                    missingReferencesSceneDatas.Add(
-                        new MissingReferencesSceneData(rootObject.name,
-                            GlobalObjectId.GetGlobalObjectIdSlow(rootObject),
-                            countMissingReference));
-                }
+                missingReferencesSceneDatas.AddRange(FindMissingReferencesGameObject(rootObject,
+                    out int countMissingReference));
 
                 countAllMissingReference += countMissingReference;
             }
-            
+
             return missingReferencesSceneDatas;
         }
     }   

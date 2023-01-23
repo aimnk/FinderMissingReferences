@@ -4,6 +4,9 @@ using UnityEditor;
 
 namespace FinderMissingReferences.Editor.Core
 {
+    /// <summary>
+    /// Date of lost links
+    /// </summary>
     [Serializable]
     public class MissingReferencesData
     {
@@ -29,10 +32,10 @@ namespace FinderMissingReferences.Editor.Core
         /// <summary>
         /// Date of lost links inside the scene
         /// </summary>
-        public List<MissingReferencesSceneData> MissingReferencesSceneData;
+        public List<MissingReferencesSubData> MissingReferencesSceneData;
         
         public MissingReferencesData(string name, string pathToAsset, string guid, int countMissingGuid, 
-            List<MissingReferencesSceneData> missingReferencesSceneData = null)
+            List<MissingReferencesSubData> missingReferencesSceneData = null)
         {
             Name = name;
             PathToAsset = pathToAsset;
@@ -43,23 +46,26 @@ namespace FinderMissingReferences.Editor.Core
     }
     
     /// <summary>
-    /// Дата потерянных ссылок внутри сцены
+    /// Date of lost links nested objects
     /// </summary>
     [Serializable]
-    public class MissingReferencesSceneData
+    public class MissingReferencesSubData
     {
         public string Name;
         
-        public GlobalObjectId LocalFileIdentifier { get; }
+        /// <summary>
+        /// GlobalObjectId in string
+        /// </summary>
+        public string GlobalObjectId { get; }
         
         /// <summary>
         /// The number of lost links for an asset
         /// </summary>
         public int CountMissingGUID { get; }
         
-        public MissingReferencesSceneData(string name, GlobalObjectId localFileIdentifier, int countMissingGuid)
+        public MissingReferencesSubData(string name, string globalObjectId, int countMissingGuid)
         {
-            LocalFileIdentifier = localFileIdentifier;
+            GlobalObjectId = globalObjectId;
             CountMissingGUID = countMissingGuid;
             Name = name;
         }

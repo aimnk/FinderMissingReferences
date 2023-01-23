@@ -233,12 +233,11 @@ namespace FinderMissingReferences.Editor
                 
                 if (GUILayout.Button(guiContent, guiStyle,GUILayout.Height(20)))
                 {
-                    EditorSceneManager.OpenScene(missingReferencesData.PathToAsset);
-                    
-                    var gameObject =
-                        GlobalObjectId.GlobalObjectIdentifierToObjectSlow(sceneData[i].LocalFileIdentifier);
-                    
-                    EditorGUIUtility.PingObject(gameObject);
+                    if (!GlobalObjectId.TryParse(sceneData[i].GlobalObjectId, out GlobalObjectId globalObjectId))
+                    {
+                        return;
+                    }
+                    PingObject(missingReferencesData, globalObjectId);
                 }
                 
                 EditorGUILayout.EndHorizontal();
@@ -247,6 +246,26 @@ namespace FinderMissingReferences.Editor
             DrawHorizontalSeparator();
         }
 
+        private void PingObject(MissingReferencesData missingReferencesData, GlobalObjectId globalObjectId)
+        {
+            if (missingReferencesData.PathToAsset.EndsWith(".unity"))
+            {
+                EditorSceneManager.OpenScene(missingReferencesData.PathToAsset);
+            }
+
+            var gameObject = GlobalObjectId.GlobalObjectIdentifierToObjectSlow(globalObjectId);
+
+            if (missingReferencesData.PathToAsset.EndsWith(".prefab"))
+            {
+#if UNITY_2021_1_OR_NEWER
+PrefabStageUtility.OpenPrefab(missingReferencesData.PathToAsset);
+Selection.activeObject = gameObject;
+#endif
+            }
+
+            EditorGUIUtility.PingObject(gameObject);
+        }
+        
         private void UpdateProgressBar(int currentProgress, int maxProgress)
         {
             string progressBarTitle = "Finder missing references";
